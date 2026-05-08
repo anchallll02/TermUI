@@ -5,9 +5,11 @@
 import {
     type Screen,
     type Style,
+    type NamedColor,
     styleToCellAttrs,
     stringWidth,
     truncate,
+    wordWrap,
 } from '@termuijs/core';
 import { Widget } from '../base/Widget.js';
 
@@ -27,33 +29,6 @@ const ROLE_CONFIG: Record<MessageRole, { badge: string; colorName: string }> = {
     system:    { badge: '[System]',    colorName: 'yellow' },
     tool:      { badge: '[Tool]',      colorName: 'magenta' },
 };
-
-// ── Word-wrap helper ──────────────────────────────────
-
-function wrapText(text: string, width: number): string[] {
-    if (width <= 0) return [];
-    const words = text.split(' ');
-    const lines: string[] = [];
-    let current = '';
-    for (const word of words) {
-        if (current.length + word.length + (current ? 1 : 0) <= width) {
-            current += (current ? ' ' : '') + word;
-        } else {
-            if (current) lines.push(current);
-            // word itself may exceed width — break it
-            if (word.length > width) {
-                for (let i = 0; i < word.length; i += width) {
-                    lines.push(word.slice(i, i + width));
-                }
-                current = '';
-            } else {
-                current = word;
-            }
-        }
-    }
-    if (current) lines.push(current);
-    return lines;
-}
 
 // ── ChatMessage widget ────────────────────────────────
 
@@ -101,7 +76,7 @@ export class ChatMessage extends Widget {
         // ── Row 0: badge + optional timestamp ────────────
         const badgeAttrs = {
             ...baseAttrs,
-            fg: { type: 'named' as const, name: config.colorName as any },
+            fg: { type: 'named' as const, name: config.colorName as NamedColor },
         };
         screen.writeString(x, y, config.badge, badgeAttrs);
 
@@ -126,7 +101,7 @@ export class ChatMessage extends Widget {
 
         const indent = '  ';
         const contentWidth = Math.max(0, width - indent.length);
-        const lines = wrapText(this._content, contentWidth);
+        const lines = contentWidth > 0 ? wordWrap(this._content, contentWidth).split('\n') : [];
         const maxContentRows = height - 1;
 
         for (let i = 0; i < Math.min(lines.length, maxContentRows); i++) {

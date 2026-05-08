@@ -13,7 +13,7 @@
 //   });
 // ─────────────────────────────────────────────────────
 
-import { type Screen, type Style, styleToCellAttrs, truncate, stringWidth } from '@termuijs/core';
+import { type Screen, type Style, styleToCellAttrs, truncate, stringWidth, caps } from '@termuijs/core';
 import { Widget } from '../base/Widget.js';
 import { computeRange } from './virtual-scroll.js';
 
@@ -218,9 +218,11 @@ export class VirtualList extends Widget {
             const totalPages = this._totalItems - visibleItemCount;
             const scrollRatio = totalPages > 0 ? this._scrollOffset / totalPages : 0;
             const thumbPos = Math.floor(scrollRatio * (height - 1));
+            const thumbChar = caps.unicode ? '█' : '#';
+            const trackChar = caps.unicode ? '░' : '|';
 
             for (let r = 0; r < height; r++) {
-                const scrollChar = r === thumbPos ? '█' : '░';
+                const scrollChar = r === thumbPos ? thumbChar : trackChar;
                 screen.setCell(scrollbarX, y + r, { char: scrollChar, ...attrs, dim: r !== thumbPos });
             }
         }

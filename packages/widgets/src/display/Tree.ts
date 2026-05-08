@@ -45,10 +45,10 @@ interface VisibleEntry {
 export class Tree extends Widget {
     private _nodes: TreeNode[];
     private _onSelect?: (node: TreeNode, path: number[]) => void;
-    private _indent: number;
-    private _selectedIndex = 0;
-    private _scrollOffset = 0;
-    private _visibleNodes: VisibleEntry[] = [];
+    protected _indent: number;
+    protected _selectedIndex = 0;
+    protected _scrollOffset = 0;
+    protected _visibleNodes: VisibleEntry[] = [];
 
     constructor(options: TreeOptions, style: Partial<Style> = {}) {
         super(style);

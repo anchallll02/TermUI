@@ -5,6 +5,7 @@
 import {
     type Screen,
     type Style,
+    type NamedColor,
     styleToCellAttrs,
     truncate,
     caps,
@@ -123,7 +124,7 @@ export class ToolCall extends Widget {
 
         const statusAttrs = {
             ...baseAttrs,
-            fg: { type: 'named' as const, name: config.colorName as any },
+            fg: { type: 'named' as const, name: config.colorName as NamedColor },
             bold: config.bold ?? false,
             dim: config.dim ?? false,
         };

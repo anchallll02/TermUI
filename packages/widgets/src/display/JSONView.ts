@@ -185,12 +185,11 @@ export class JSONView extends Tree {
         const expandedChevron  = useUnicode ? '▼ ' : 'v ';
         const leafPrefix       = useUnicode ? '• ' : '* ';
 
-        // Access Tree's private fields via any-cast
-        const self = this as any;
-        const visibleNodes: Array<{ node: TreeNode; depth: number; path: number[] }> = self._visibleNodes;
-        const scrollOffset: number = self._scrollOffset;
-        const selectedIndex: number = self._selectedIndex;
-        const indent: number = self._indent;
+        // Access Tree's protected fields directly
+        const visibleNodes = this._visibleNodes;
+        const scrollOffset = this._scrollOffset;
+        const selectedIndex = this._selectedIndex;
+        const indent = this._indent;
 
         const visibleCount = Math.min(
             visibleNodes.length - scrollOffset,
