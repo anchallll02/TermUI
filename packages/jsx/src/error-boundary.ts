@@ -7,6 +7,7 @@
 // ─────────────────────────────────────────────────────
 
 import type { VNode, FC } from './vnode.js';
+import { Fragment } from './vnode.js';
 
 export interface ErrorBoundaryProps {
     fallback?: (error: Error) => VNode;
@@ -25,6 +26,6 @@ export const ErrorBoundary: FC<ErrorBoundaryProps> = (props) => {
         : [];
     if (children.length === 0) return null as any;
     if (children.length === 1) return children[0] as any;
-    // Multiple children — return array (reconciler handles VNode arrays)
-    return children as any;
+    // Wrap multiple children in a Fragment so the reconciler handles them correctly
+    return { type: Fragment, children } as any;
 };

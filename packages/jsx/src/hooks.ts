@@ -204,6 +204,9 @@ export function useEffect(effect: () => void | (() => void), deps?: any[]): void
  */
 export function useInput(handler: (key: string, event: KeyEvent) => void): void {
     const fiber = currentFiber();
+    if (process.env.NODE_ENV !== 'production' && fiber.onInput) {
+        console.warn('[useInput] fiber.onInput is already set. useInput and useKeymap are mutually exclusive per component.');
+    }
     fiber.onInput = (event: KeyEvent) => handler(event.key, event);
 }
 
@@ -218,6 +221,8 @@ export interface KeyBinding {
 
 /**
  * useKeymap — declarative keybindings with optional conflict detection.
+ *
+ * Mutually exclusive with useInput — only one per component.
  *
  * ```tsx
  * useKeymap([

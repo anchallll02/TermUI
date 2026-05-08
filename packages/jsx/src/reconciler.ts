@@ -312,7 +312,23 @@ export function reRenderComponent(instance: ComponentInstance): Widget {
     _parentFiber = fiber;
 
     setCurrentFiber(fiber);
-    const vnode = component({ ...props, children: children.length === 1 ? children[0] : children });
+
+    // Call the component function — catch any render-time errors (same as renderComponent)
+    let vnode: VNode;
+    try {
+        vnode = component({ ...props, children: children.length === 1 ? children[0] : children });
+    } catch (rawErr) {
+        clearCurrentFiber();
+        _parentFiber = prevParent;
+        const err = rawErr instanceof Error ? rawErr : new Error(String(rawErr));
+        const boundary = findErrorBoundary(fiber);
+        if (boundary?.errorFallback) {
+            return reconcile(boundary.errorFallback(err));
+        }
+        console.error('[TermUI] Unhandled component error:', err);
+        return reconcile(defaultErrorVNode(err));
+    }
+
     clearCurrentFiber();
 
     // memo() optimization: if component returned same VNode reference, skip widget rebuild
