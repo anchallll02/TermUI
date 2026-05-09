@@ -41,7 +41,7 @@ export { render, renderApp } from './render.js';
 export type { RenderOptions } from './render.js';
 
 // ── Reconciler (internal, but useful for testing) ──
-export { reconcile, unmountAll } from './reconciler.js';
+export { reconcile, reRenderComponent, unmountAll } from './reconciler.js';
 
 // ── Internal — used by @termuijs/testing ──
 export { setRequestRender, collectInputHandlers } from './hooks.js';

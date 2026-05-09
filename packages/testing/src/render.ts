@@ -9,7 +9,7 @@
 import { Screen, type KeyEvent } from '@termuijs/core';
 import { Box, Text, Widget } from '@termuijs/widgets';
 import {
-    reconcile, unmountAll, setRequestRender,
+    reconcile, reRenderComponent, unmountAll, setRequestRender, collectInputHandlers,
     type VNode,
 } from '@termuijs/jsx';
 
@@ -58,6 +58,18 @@ export interface TestInstance {
      * Force a re-render of the component tree.
      */
     rerender(element?: VNode): void;
+
+    /**
+     * Wait for an assertion to pass within a timeout.
+     * Retries fn every interval ms until it stops throwing or the timeout elapses.
+     */
+    waitFor(fn: () => void, opts?: { timeout?: number; interval?: number }): Promise<void>;
+
+    /**
+     * Render the current screen buffer to a plain string.
+     * Each non-empty row is joined with newlines.
+     */
+    renderToString(): string;
 
     /**
      * Unmount and clean up all component instances.
@@ -256,14 +268,13 @@ export function render(element: VNode, options: TestRenderOptions = {}): TestIns
                 preventDefault() { this._defaultPrevented = true; },
             };
 
-            // Walk widget tree to find fibers with onInput handlers
-            walkWidgets(container, (w) => {
-                const inst = (globalThis as any).__termuijs_instances?.get(w);
-                if (inst?.fiber?.onInput) {
-                    inst.fiber.onInput(event);
+            const instances: Map<Widget, any> = (globalThis as any).__termuijs_instances;
+            const rootInstance = instances?.get(rootWidget);
+            if (rootInstance?.fiber) {
+                for (const handler of collectInputHandlers(rootInstance.fiber)) {
+                    handler(event);
                 }
-                return false;
-            });
+            }
         },
 
         typeText(text: string): void {
@@ -274,11 +285,39 @@ export function render(element: VNode, options: TestRenderOptions = {}): TestIns
 
         rerender(el?: VNode): void {
             if (el) currentElement = el;
-            const newRoot = reconcile(currentElement);
-            container.clearChildren();
-            container.addChild(newRoot);
-            rootWidget = newRoot;
+            const instances: Map<Widget, any> = (globalThis as any).__termuijs_instances;
+            const rootInstance = instances?.get(rootWidget);
+            if (rootInstance) {
+                const newRoot = reRenderComponent(rootInstance);
+                container.clearChildren();
+                container.addChild(newRoot);
+                rootWidget = newRoot;
+            } else if (el) {
+                const newRoot = reconcile(currentElement);
+                container.clearChildren();
+                container.addChild(newRoot);
+                rootWidget = newRoot;
+            }
             renderToScreen(container, screen);
+        },
+
+        async waitFor(fn: () => void, opts = { timeout: 1000, interval: 10 }): Promise<void> {
+            const timeout = opts.timeout ?? 1000;
+            const interval = opts.interval ?? 10;
+            const deadline = Date.now() + timeout;
+            while (Date.now() < deadline) {
+                try {
+                    fn();
+                    return;
+                } catch {
+                    await new Promise(r => setTimeout(r, interval));
+                }
+            }
+            fn(); // one final attempt to surface the real error
+        },
+
+        renderToString(): string {
+            return readScreenLines(screen).filter(l => l.length > 0).join('\n');
         },
 
         unmount(): void {
