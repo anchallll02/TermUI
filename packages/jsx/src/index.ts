@@ -55,7 +55,7 @@ export type { RenderOptions } from './render.js';
 export { reconcile, reRenderComponent, unmountAll } from './reconciler.js';
 
 // ── Internal — used by @termuijs/testing ──
-export { setRequestRender, collectInputHandlers } from './hooks.js';
+export { setRequestRender, getRequestRender, collectInputHandlers, destroyFiber } from './hooks.js';
 
 // ── Convenience alias ──
 /** h() — shorthand for createElement */

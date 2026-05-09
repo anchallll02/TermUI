@@ -9,8 +9,8 @@
 import { Screen, type KeyEvent } from '@termuijs/core';
 import { Box, Text, Widget } from '@termuijs/widgets';
 import {
-    reconcile, reRenderComponent, unmountAll, setRequestRender, collectInputHandlers,
-    type VNode,
+    reconcile, reRenderComponent, unmountAll, setRequestRender, getRequestRender,
+    collectInputHandlers, destroyFiber, type VNode,
 } from '@termuijs/jsx';
 
 /**
@@ -202,12 +202,24 @@ export function render(element: VNode, options: TestRenderOptions = {}): TestIns
     });
     container.addChild(rootWidget);
 
-    // Set up re-render callback
+    // Save caller's render callback so we can restore it on unmount
+    const prevRender = getRequestRender();
+
+    // Set up re-render callback — use fiber-preserving reRenderComponent
     setRequestRender(() => {
-        const newRoot = reconcile(currentElement);
-        container.clearChildren();
-        container.addChild(newRoot);
-        rootWidget = newRoot;
+        const instances: Map<Widget, any> = (globalThis as any).__termuijs_instances;
+        const rootInstance = instances?.get(rootWidget);
+        if (rootInstance) {
+            const newRoot = reRenderComponent(rootInstance);
+            container.clearChildren();
+            container.addChild(newRoot);
+            rootWidget = newRoot;
+        } else {
+            const newRoot = reconcile(currentElement);
+            container.clearChildren();
+            container.addChild(newRoot);
+            rootWidget = newRoot;
+        }
         renderToScreen(container, screen);
     });
 
@@ -328,7 +340,15 @@ export function render(element: VNode, options: TestRenderOptions = {}): TestIns
         },
 
         unmount(): void {
-            unmountAll();
+            // Restore the caller's render callback (don't leave a stale test callback)
+            setRequestRender(prevRender);
+            // Destroy only this test's root fiber — don't wipe the whole app
+            const instances: Map<Widget, any> = (globalThis as any).__termuijs_instances;
+            const rootInstance = instances?.get(rootWidget);
+            if (rootInstance?.fiber) {
+                destroyFiber(rootInstance.fiber);
+            }
+            instances?.delete(rootWidget);
         },
     };
 

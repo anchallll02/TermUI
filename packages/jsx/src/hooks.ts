@@ -106,8 +106,13 @@ export function createFiber(parent?: Fiber): Fiber {
 }
 
 /** Set the requestRender callback (called by the renderer) */
-export function setRequestRender(fn: () => void): void {
+export function setRequestRender(fn: (() => void) | null): void {
     _requestRender = fn;
+}
+
+/** Get the current requestRender callback */
+export function getRequestRender(): (() => void) | null {
+    return _requestRender;
 }
 
 // ── Batched State Updates ──
@@ -222,10 +227,11 @@ export function useEffect(effect: () => void | (() => void), deps?: any[]): void
  */
 export function useInput(handler: (key: string, event: KeyEvent) => void): void {
     const fiber = currentFiber();
-    if (process.env.NODE_ENV !== 'production' && fiber.onInput) {
-        console.warn('[useInput] fiber.onInput is already set. useInput and useKeymap are mutually exclusive per component.');
-    }
-    fiber.onInput = (event: KeyEvent) => handler(event.key, event);
+    const prev = fiber.onInput;
+    fiber.onInput = (event: KeyEvent) => {
+        handler(event.key, event);
+        prev?.(event);
+    };
 }
 
 export interface KeyBinding {
