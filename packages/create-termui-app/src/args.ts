@@ -3,6 +3,11 @@ export interface CliArgs {
     template?: string;
     theme?: string;
     yes: boolean;
+    dir?: string;
+
+    command?: string;
+    component?: string;
+    dryRun?: boolean;
 }
 
 const TEMPLATE_KEYS = [
@@ -34,7 +39,23 @@ function getValue(
 export function parseArgs(argv: string[]): CliArgs {
     const args: CliArgs = {
         yes: false,
+        dryRun: false,
     };
+
+    if (argv[0] === "add") {
+        const positional = argv.filter(a => !a.startsWith("-"));
+        args.command = positional[0];
+        args.component = positional[1];
+        args.dryRun = argv.includes("--dry-run");
+        args.yes = argv.includes("--yes");
+
+        const dirValue = getValue(argv, "--dir");
+        if (dirValue) {
+            args.dir = dirValue;
+        }
+
+        return args;
+    }
 
     // positional (first non-flag)
     const positional = argv.find(a => !a.startsWith("-"));
