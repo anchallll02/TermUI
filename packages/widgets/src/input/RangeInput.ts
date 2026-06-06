@@ -81,11 +81,11 @@ export class RangeInput extends Widget {
         }
 
         if (this._activeHandle === 'low') {
-            if (event.key === 'arrowright') this.setLow(this._low + this._step);
-            if (event.key === 'arrowleft') this.setLow(this._low - this._step);
+            if (event.key === 'right') this.setLow(this._low + this._step);
+            if (event.key === 'left') this.setLow(this._low - this._step);
         } else {
-            if (event.key === 'arrowright') this.setHigh(this._high + this._step);
-            if (event.key === 'arrowleft') this.setHigh(this._high - this._step);
+            if (event.key === 'right') this.setHigh(this._high + this._step);
+            if (event.key === 'left') this.setHigh(this._high - this._step);
         }
     }
 

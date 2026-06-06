@@ -65,7 +65,7 @@ describe('RangeInput', () => {
         const r = new RangeInput('Price');
         r.setRange(20, 80);
         r.handleKey(makeKey('tab'));
-        r.handleKey(makeKey('arrowright'));
+        r.handleKey(makeKey('right'));
         expect(r.getHigh()).toBe(81); // high handle moved
         expect(r.getLow()).toBe(20);  // low unchanged
     });
@@ -73,9 +73,9 @@ describe('RangeInput', () => {
     it('arrow keys move low handle by step', async () => {
         const { RangeInput } = await import('./RangeInput.js');
         const r = new RangeInput('Price');
-        r.handleKey(makeKey('arrowright'));
+        r.handleKey(makeKey('right'));
         expect(r.getLow()).toBe(1);
-        r.handleKey(makeKey('arrowleft'));
+        r.handleKey(makeKey('left'));
         expect(r.getLow()).toBe(0);
     });
 
