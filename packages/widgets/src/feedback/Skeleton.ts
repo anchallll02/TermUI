@@ -1,94 +1,93 @@
-// ─────────────────────────────────────────────────────
-// @termuijs/widgets — Skeleton loading placeholder widget
-// ─────────────────────────────────────────────────────
-
-import { type Screen, type Style, type Color, caps, prefersReducedMotion } from '@termuijs/core';
+import { type Screen, type Style, type Color, caps } from '@termuijs/core';
 import { Widget } from '../base/Widget.js';
 import { timerPoolSubscribe } from '@termuijs/motion';
 
 export interface SkeletonOptions {
-    /** Animation style: 'pulse' alternates two chars; 'shimmer' scrolls a highlight band */
-    variant?: 'pulse' | 'shimmer';
-    /** Animation interval in ms (default: 600) */
-    intervalMs?: number;
-    /** Characters for pulse: [dim, bright]. Default: ['░', '▒'] (ASCII fallback: ['-', '#']) */
-    chars?: [string, string];
-    /** Color for the bright state (optional) */
-    color?: Color;
+    width?: number;
+    height?: number;
+    animated?: boolean;
+    character?: string;
 }
 
-/**
- * Skeleton — animated loading placeholder.
- *
- * Supports:
- * - 'pulse' variant: alternates between dim and bright fill characters
- * - 'shimmer' variant: scrolls a bright band (~20% width) across the widget
- * - Automatic ASCII fallback when unicode is unavailable
- * - No animation when caps.motion is false (static frame 0)
- */
 export class Skeleton extends Widget {
+    private _width: number;
+    private _height: number;
+    private _animated: boolean;
+    private _character: string;
+
     private _frame: number = 0;
-    private _shimmerPos: number = 0;
-    private _unsub?: () => void;
-    private _chars: [string, string];
-    private _variant: 'pulse' | 'shimmer';
-    private _intervalMs: number;
+    private _unsubscribe?: () => void;
 
-    constructor(style: Partial<Style> = {}, options: SkeletonOptions = {}) {
+    constructor(style: Partial<Style> = {}, opts: SkeletonOptions = {}) {
         super(style);
-        this._variant = options.variant ?? 'pulse';
-        this._intervalMs = options.intervalMs ?? 600;
 
-        // ASCII fallback when unicode not available
-        const defaultChars: [string, string] = caps.unicode
-            ? ['░', '▒']
-            : ['-', '#'];
-        this._chars = options.chars ?? defaultChars;
+        this._width = opts.width ?? 10;
+        this._height = opts.height ?? 1;
+        this._animated = opts.animated ?? true;
 
-        // Only animate when motion is enabled
-        if (!prefersReducedMotion()) {
-            this._unsub = timerPoolSubscribe(this._intervalMs, () => {
+        const defaultChar = caps.unicode ? '░' : '-';
+        this._character = opts.character ?? defaultChar;
+
+        if (this._animated && caps.motion) {
+            this._unsubscribe = timerPoolSubscribe(600, () => {
                 this._frame = 1 - this._frame;
-                if (this._variant === 'shimmer') {
-                    this._shimmerPos++;
-                }
                 this.markDirty();
             });
         }
     }
 
+    setWidth(width: number): void {
+        this._width = Math.max(0, width);
+        this.markDirty();
+    }
+
+    setHeight(height: number): void {
+        this._height = Math.max(0, height);
+        this.markDirty();
+    }
+
+    setAnimated(animated: boolean): void {
+        this._animated = animated;
+
+        this._unsubscribe?.();
+        this._unsubscribe = undefined;
+
+        if (animated && caps.motion) {
+            this._unsubscribe = timerPoolSubscribe(600, () => {
+                this._frame = 1 - this._frame;
+                this.markDirty();
+            });
+        }
+
+        this.markDirty();
+    }
+
     override unmount(): void {
-        this._unsub?.();
-        this._unsub = undefined;
+        this._unsubscribe?.();
+        this._unsubscribe = undefined;
         super.unmount();
     }
 
     protected _renderSelf(screen: Screen): void {
         const rect = this._getContentRect();
         const { x, y, width, height } = rect;
+
         if (width <= 0 || height <= 0) return;
 
-        if (this._variant === 'pulse') {
-            const char = this._chars[this._frame];
-            const dim = this._frame === 0;
-            for (let row = y; row < y + height; row++) {
-                for (let col = x; col < x + width; col++) {
-                    screen.setCell(col, row, { char, dim, bold: false });
-                }
-            }
-        } else {
-            // Shimmer: moving band of bright char, rest dim
-            const bandWidth = Math.max(1, Math.floor(width * 0.2));
-            const totalPositions = width + bandWidth;
-            const bandStart = this._shimmerPos % totalPositions;
+        const char =
+            this._frame === 0
+                ? this._character
+                : caps.unicode
+                    ? '▒'
+                    : '#';
 
-            for (let row = y; row < y + height; row++) {
-                for (let colOffset = 0; colOffset < width; colOffset++) {
-                    const col = x + colOffset;
-                    const inBand = colOffset >= bandStart && colOffset < bandStart + bandWidth;
-                    const char = inBand ? this._chars[1] : this._chars[0];
-                    screen.setCell(col, row, { char, dim: !inBand, bold: false });
-                }
+        for (let row = 0; row < height; row++) {
+            for (let col = 0; col < width; col++) {
+                screen.setCell(x + col, y + row, {
+                    char,
+                    dim: this._frame === 0,
+                    bold: false,
+                });
             }
         }
     }
