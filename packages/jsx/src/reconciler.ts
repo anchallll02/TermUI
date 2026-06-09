@@ -209,7 +209,7 @@ function createIntrinsicWidget(tag: string, props: Record<string, any>, children
 
 /** Extract style-related props */
 function extractStyle(props: Record<string, any>): Partial<Style> {
-    const style: Partial<Style> = { ...(props.style ?? {}) };
+    const style: Partial<Style> = {};
     if (props.flexGrow != null) style.flexGrow = props.flexGrow;
     if (props.flexShrink != null) style.flexShrink = props.flexShrink;
     if (props.width != null) style.width = props.width;
