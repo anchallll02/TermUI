@@ -1,4 +1,4 @@
-import { type Screen, type Style, caps } from '@termuijs/core';
+import { type Screen, type Style, type Color, caps } from '@termuijs/core';
 import { Widget } from '../base/Widget.js';
 import { timerPoolSubscribe } from '@termuijs/motion';
 
@@ -6,6 +6,7 @@ export interface SkeletonOptions {
     variant?: 'pulse' | 'shimmer';
     intervalMs?: number;
     chars?: [string, string];
+    color?: Color;
 }
 
 export class Skeleton extends Widget {

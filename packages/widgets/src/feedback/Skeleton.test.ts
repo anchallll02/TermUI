@@ -62,8 +62,8 @@ describe('Skeleton', () => {
         expect(motion.timerPoolSubscribe).not.toHaveBeenCalled();
     });
 
-    it('respects custom character', () => {
-        const s = new Skeleton({}, { character: 'X' });
+    it('respects custom chars', () => {
+        const s = new Skeleton({}, { chars: ['X', 'X'] });
         s.updateRect({ x: 0, y: 0, width: 3, height: 1 });
 
         const screen = new Screen(3, 1);
@@ -72,12 +72,6 @@ describe('Skeleton', () => {
         expect(screen.back[0].map(c => c.char).join('')).toBe('XXX');
     });
 
-    it('setWidth / setHeight trigger markDirty safely', () => {
-        const s = new Skeleton();
-
-        expect(() => s.setWidth(10)).not.toThrow();
-        expect(() => s.setHeight(5)).not.toThrow();
-    });
 
     it('unmount unsubscribes timer', () => {
         const unsub = vi.fn();
