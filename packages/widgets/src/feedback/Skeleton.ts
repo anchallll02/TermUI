@@ -1,4 +1,4 @@
-import { type Screen, type Style, caps } from '@termuijs/core';
+import { type Screen, type Style, type Color, caps } from '@termuijs/core';
 import { Widget } from '../base/Widget.js';
 import { timerPoolSubscribe } from '@termuijs/motion';
 
@@ -9,32 +9,61 @@ export interface SkeletonOptions {
 }
 
 export class Skeleton extends Widget {
-    private _frame = 0;
-    private _shimmerPos = 0;
-    private _variant: 'pulse' | 'shimmer';
-    private _chars: [string, string];
-    private _intervalMs: number;
+    private _width: number;
+    private _height: number;
+    private _animated: boolean;
+    private _character: string;
+
+    private _frame: number = 0;
     private _unsubscribe?: () => void;
 
     constructor(style: Partial<Style> = {}, opts: SkeletonOptions = {}) {
         super(style);
 
-        this._variant = opts.variant ?? 'pulse';
-        this._intervalMs = opts.intervalMs ?? 600;
+        this._width = opts.width ?? 10;
+        this._height = opts.height ?? 1;
+        this._animated = opts.animated ?? true;
 
-        this._chars = opts.chars ?? (caps.unicode ? ['░', '▒'] : ['-', '#']);
+        const defaultChar = caps.unicode ? '░' : '-';
+        this._character = opts.character ?? defaultChar;
 
-        if (caps.motion) {
-            this._unsubscribe = timerPoolSubscribe(this._intervalMs, () => {
+        if (this._animated && caps.motion) {
+            this._unsubscribe = timerPoolSubscribe(600, () => {
                 this._frame = 1 - this._frame;
-                this._shimmerPos++;
                 this.markDirty();
             });
         }
     }
 
+    setWidth(width: number): void {
+        this._width = Math.max(0, width);
+        this.markDirty();
+    }
+
+    setHeight(height: number): void {
+        this._height = Math.max(0, height);
+        this.markDirty();
+    }
+
+    setAnimated(animated: boolean): void {
+        this._animated = animated;
+
+        this._unsubscribe?.();
+        this._unsubscribe = undefined;
+
+        if (animated && caps.motion) {
+            this._unsubscribe = timerPoolSubscribe(600, () => {
+                this._frame = 1 - this._frame;
+                this.markDirty();
+            });
+        }
+
+        this.markDirty();
+    }
+
     override unmount(): void {
         this._unsubscribe?.();
+        this._unsubscribe = undefined;
         super.unmount();
     }
 
@@ -44,30 +73,20 @@ export class Skeleton extends Widget {
 
         if (width <= 0 || height <= 0) return;
 
-        if (this._variant === 'pulse') {
-            const char = this._chars[this._frame];
+        const char =
+            this._frame === 0
+                ? this._character
+                : caps.unicode
+                    ? '▒'
+                    : '#';
 
-            for (let r = 0; r < height; r++) {
-                for (let c = 0; c < width; c++) {
-                    screen.setCell(x + c, y + r, {
-                        char,
-                        dim: this._frame === 0,
-                    });
-                }
-            }
-        } else {
-            const band = Math.max(1, Math.floor(width * 0.2));
-            const total = width + band;
-            const start = this._shimmerPos % total;
-
-            for (let r = 0; r < height; r++) {
-                for (let c = 0; c < width; c++) {
-                    const inBand = c >= start && c < start + band;
-                    screen.setCell(x + c, y + r, {
-                        char: inBand ? this._chars[1] : this._chars[0],
-                        dim: !inBand,
-                    });
-                }
+        for (let row = 0; row < height; row++) {
+            for (let col = 0; col < width; col++) {
+                screen.setCell(x + col, y + row, {
+                    char,
+                    dim: this._frame === 0,
+                    bold: false,
+                });
             }
         }
     }
